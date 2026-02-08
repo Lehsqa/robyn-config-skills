@@ -1,0 +1,4 @@
+interface:
+  display_name: "Robyn Config Backend Best Practices"
+  short_description: "Robyn backend scaffolding and architecture playbook"
+  default_prompt: "Use $robyn-config-backend-best-practices to scaffold, evolve, or audit a Robyn backend with robyn-config and provide stack-specific commands."
