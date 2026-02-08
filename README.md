@@ -32,7 +32,7 @@ Robyn backend scaffolding and architecture guidance for teams using `robyn-confi
 Install this repository as a skills source:
 
 ```bash
-npx skills add <owner>/<repo>
+npx skills add Lehsqa/robyn-config-skills
 ```
 
 ## Usage
