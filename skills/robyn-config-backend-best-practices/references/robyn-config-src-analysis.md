@@ -7,8 +7,10 @@ Primary sources:
 - `src/cli.py`
 - `src/create/utils.py`
 - `src/add/utils.py`
+- `src/adminpanel/utils/*.py`
 - selected generated templates in `src/create/common`, `src/create/ddd`, `src/create/mvc`
-- integration tests in `tests/integration`
+- admin panel templates in `src/adminpanel/template`
+- integration tests in `tests/integration` (`test_create_command.py`, `test_add_command.py`, `test_adminpanel_command.py`)
 
 ## CLI behavior and failure rollback model
 
@@ -25,6 +27,15 @@ Primary sources:
 - Entry point: `src/cli.py:add(...)`.
 - Creates a full project backup in a temp directory before mutating code.
 - Runs `add_business_logic(...)`.
+- On failure, restores backup into project directory.
+- Always deletes temporary backup directory in `finally` block.
+
+### `adminpanel` command
+- Entry point: `src/cli.py:adminpanel(...)`.
+- Validates non-empty admin username/password inputs.
+- Checks `[tool.robyn-config.adminpanel].created`; if already created, prompts user before updating scaffolding.
+- Creates a full project backup in a temp directory before mutation.
+- Runs `add_adminpanel(...)`.
 - On failure, restores backup into project directory.
 - Always deletes temporary backup directory in `finally` block.
 
@@ -71,11 +82,42 @@ Primary sources:
 - DDD:
   - creates domain package, operational module, presentation package;
   - creates ORM-specific repository module;
-  - appends generated table class into shared `tables.py`.
+  - creates or updates table module exports in shared tables package (`tables/__init__.py`), with legacy fallback support for `tables.py`.
 - MVC:
   - appends table and repository classes into existing model/repository files;
   - creates new view module;
   - updates `urls.py` with import and `register(app)` call.
+
+## `adminpanel` command scaffolding and wiring model
+
+### Project detection and compatibility
+- Reads `pyproject.toml` and requires `[tool.robyn-config]` section.
+- Uses project design (`ddd`/`mvc`) and ORM (`sqlalchemy`/`tortoise`) to select templates and wiring paths.
+
+### Template rendering and target paths
+- Copies and renders templates from `src/adminpanel/template`.
+- DDD target root: `src/app/infrastructure/adminpanel`.
+- MVC target root: `src/app/adminpanel`.
+- Keeps generated module filenames ORM-agnostic while rendering ORM-specific internals.
+
+### Route and app registration
+- Ensures `adminpanel` import in `src/app/server.py`.
+- DDD: injects `adminpanel.register` into route registrars when possible, with fallback call insertion.
+- MVC: ensures `adminpanel.register(app)` call before main guard.
+
+### Table integration and metadata
+- Appends admin auth table exports (`Role`, `UserRole`) to configured database table path.
+- Respects `[tool.robyn-config.add].database_table_path` overrides with fallback defaults.
+- Sets `[tool.robyn-config.adminpanel].created = true` in `pyproject.toml`.
+
+### Dependency management
+- Ensures required dependencies in `pyproject.toml`: `jinja2`, `aiosqlite`, `pandas`, `openpyxl`.
+
+### Runtime/admin UX behavior from generated templates
+- Admin UI supports both dark and light themes.
+- Project models are auto-discovered and presented in `/admin/models`.
+- Generated admin routes support CRUD workflows for discovered model tables.
+- Default superadmin credentials are `admin/admin`, overridable via CLI options.
 
 ## Generated app runtime model
 
@@ -141,6 +183,8 @@ Primary sources:
 - Default CORS allows `*` values; production should narrow origins and headers.
 - `add` injection helpers are text-based and assume common import formatting; heavily customized files can reduce insertion reliability.
 - `add` rollback uses full directory backup copy, which can be expensive for large repositories.
+- `adminpanel` also uses full-directory backup/restore; this can be expensive for large repositories.
+- Default superadmin credentials (`admin/admin`) should be overridden in non-development environments.
 - Behavior differs between templates for user login lookup:
   - DDD repositories use username lookup in shown templates;
   - MVC repository lookup attempts both username and email.

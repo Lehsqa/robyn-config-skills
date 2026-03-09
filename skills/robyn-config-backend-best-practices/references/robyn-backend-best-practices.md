@@ -6,7 +6,7 @@ Each rule includes: why it matters, anti-pattern, preferred pattern, and verific
 ## P0.1 Architecture boundaries and consistency
 
 ### Why it matters
-Boundary drift is the fastest way to make generated templates hard to maintain, especially when `robyn-config add` continues mutating expected files.
+Boundary drift is the fastest way to make generated templates hard to maintain, especially when `robyn-config add` and `robyn-config adminpanel` continue mutating expected files.
 
 ### Anti-pattern
 - Mixing DB writes, request parsing, and email/cache logic in one route function across designs.
@@ -20,7 +20,7 @@ Boundary drift is the fastest way to make generated templates hard to maintain, 
 ### Verification checks
 - No direct database calls in DDD presentation modules.
 - No orphan route files that are not registered.
-- `robyn-config add` can still insert imports and registrations cleanly.
+- `robyn-config add` and `robyn-config adminpanel` can still insert imports and registrations cleanly.
 
 ## P0.2 Config and environment safety
 
@@ -187,10 +187,10 @@ Template-based generators need both isolated correctness and stack-level validat
 
 ### Preferred pattern (robyn-config aligned)
 - Unit tests for helper utilities and mutation functions.
-- Integration tests for `create` and `add` generated structure and lintability.
+- Integration tests for `create`, `add`, and `adminpanel` generated structure and lintability.
 - E2E tests for generated service endpoints and compose stack behavior.
 
 ### Verification checks
-- `create` and `add` workflows are covered across design/ORM combinations.
+- `create`, `add`, and `adminpanel` workflows are covered across design/ORM combinations.
 - Generated files pass lint checks for inserted modules.
 - End-to-end flow verifies auth and generated entity endpoints.

@@ -1,6 +1,6 @@
 ---
 name: robyn-config-backend-best-practices
-description: Robyn backend scaffolding and architecture guidance for projects using robyn-config. Use when creating or evolving Robyn services, choosing DDD vs MVC, choosing SQLAlchemy vs Tortoise, adding new entities/routes/repositories with robyn-config add, auditing Robyn backend quality, or authoring and improving skill markdown for Robyn engineering workflows.
+description: Robyn backend scaffolding and architecture guidance for projects using robyn-config. Use when creating or evolving Robyn services, choosing DDD vs MVC, choosing SQLAlchemy vs Tortoise, adding entities with robyn-config add, scaffolding admin panel with robyn-config adminpanel, auditing Robyn backend quality, or authoring and improving skill markdown for Robyn engineering workflows.
 ---
 
 # Robyn Config Backend Best Practices
@@ -8,9 +8,11 @@ description: Robyn backend scaffolding and architecture guidance for projects us
 ## Overview and intent
 Use this skill to work effectively with `robyn-config` and production-oriented Robyn backend patterns.
 
-This skill is optimized for four task groups:
+This skill is optimized for six task groups:
 - scaffold a new service with `robyn-config create`
 - extend an existing service with `robyn-config add`
+- scaffold admin panel with `robyn-config adminpanel`
+- keep local skill installation synchronized with latest `robyn-config` package releases
 - audit and improve architecture and operational readiness
 - author high-quality skill files for Robyn engineering work
 
@@ -24,6 +26,8 @@ Do not load every reference file by default. Load only the files required for th
 2. Classify requested work:
    - bootstrap
    - extension
+   - adminpanel scaffolding
+   - package release sync
    - architecture or operations audit
    - skill authoring
 3. Select references from the routing table in this file.
@@ -62,7 +66,27 @@ robyn-config add <entity-name> <project-path>
 5. Regenerate migrations if schema changed.
 6. Run checks and confirm command rollback behavior if failures occur.
 
-## Workflow C: review and improve architecture and ops readiness
+## Workflow C: add admin panel with `robyn-config adminpanel`
+1. Ensure target project is a `robyn-config` project by checking `[tool.robyn-config]`.
+2. Check whether `[tool.robyn-config.adminpanel].created = true` already exists; if yes, account for update confirmation behavior.
+3. Run command:
+
+```bash
+robyn-config adminpanel [-u <admin-username>] [-p <admin-password>] <project-path>
+```
+
+4. Verify generated behavior:
+   - admin module exists for the selected design and is registered in app startup.
+   - `/admin` UI supports dark/light themes.
+   - project models are auto-discovered and listed under `/admin/models`.
+   - CRUD flows are available for discovered model tables.
+   - admin auth bootstrap is configured for default or provided superadmin credentials.
+5. Verify dependencies and metadata updates in `pyproject.toml`:
+   - required dependencies: `jinja2`, `aiosqlite`, `pandas`, `openpyxl`
+   - `[tool.robyn-config.adminpanel].created = true`
+6. Run checks and confirm command rollback behavior if failures occur.
+
+## Workflow D: review and improve architecture and ops readiness
 1. Validate architecture boundaries for selected design.
 2. Validate runtime safety:
    - settings and env overrides
@@ -78,7 +102,7 @@ robyn-config add <entity-name> <project-path>
    - P2 maintainability and performance
 5. Provide file-targeted, diff-ready changes.
 
-## Workflow D: author and update skill files for Robyn engineering
+## Workflow E: author and update skill files for Robyn engineering
 1. Keep `SKILL.md` concise and procedural.
 2. Put deep detail into `references/` and load on demand.
 3. Write frontmatter with explicit trigger contexts.
@@ -87,6 +111,19 @@ robyn-config add <entity-name> <project-path>
    - no placeholder markers
    - all referenced files exist
    - no extra docs such as README or changelog inside skill folder
+
+## Workflow F: sync skills after a `robyn-config` package release
+1. Run:
+
+```bash
+./skills/robyn-config-backend-best-practices/scripts/update-if-new-robyn-config.sh
+```
+
+2. Script behavior:
+   - checks installed `robyn-config` version vs latest PyPI version
+   - if newer version exists, runs `python -m pip install --upgrade robyn-config`
+   - then runs `npx skills update`
+   - if already up to date, exits without changes
 
 ## Reference routing table
 Open only the file needed for the task:
@@ -105,6 +142,8 @@ Open only the file needed for the task:
   - Use for writing and validating high-quality skill markdown.
 - `references/react-style-rule-system.md`
   - Use for reusable rule-library design patterns and taxonomy.
+- `scripts/update-if-new-robyn-config.sh`
+  - Use to check for a newer `robyn-config` release and update local skills only when needed.
 
 ## Output requirements
 Always:

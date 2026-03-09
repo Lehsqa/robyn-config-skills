@@ -37,6 +37,7 @@ This guide compares how `robyn-config` templates implement each ORM stack.
 Differences to watch:
 - Query expression style and capability differ by ORM.
 - Some template behavior may differ by design (for example login lookup patterns in shown repositories).
+- `robyn-config adminpanel` renders ORM-specific admin adapters while keeping generated module filenames ORM-agnostic.
 
 ## Migration toolchain
 

@@ -15,13 +15,14 @@ Robyn backend scaffolding and architecture guidance for teams using `robyn-confi
 - Choosing between DDD and MVC architecture
 - Choosing between SQLAlchemy and Tortoise ORM
 - Extending a service with `robyn-config add`
+- Adding admin panel scaffolding with `robyn-config adminpanel`
 - Auditing backend quality, configuration safety, and operational readiness
 - Creating or improving Robyn engineering `SKILL.md` files
 
 **Categories covered:**
 - `robyn-config` source behavior and generation model
 - Robyn backend best practices by priority (P0/P1/P2)
-- Operator workflows (`create`, `add`, migrations, local/compose runbooks)
+- Operator workflows (`create`, `add`, `adminpanel`, migrations, local/compose runbooks)
 - DDD vs MVC architecture decisions
 - SQLAlchemy vs Tortoise tradeoffs
 - Skill authoring patterns and progressive disclosure
@@ -47,6 +48,14 @@ Scaffold a new DDD Robyn service with SQLAlchemy and uv
 
 ```text
 Add a product entity to my existing MVC + Tortoise project
+```
+
+```text
+Add admin panel scaffolding with dark/light UI and model CRUD to my project
+```
+
+```text
+Check whether a newer robyn-config release is available and update skills
 ```
 
 ```text

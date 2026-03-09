@@ -16,7 +16,7 @@ This reference extracts rules from the local skill-creator guidance in the repos
 ## Quality pattern for trigger descriptions
 Good trigger descriptions include:
 - domain (`robyn-config`, Robyn backend architecture)
-- action (`create`, `add`, audit, refactor)
+- action (`create`, `add`, `adminpanel`, audit, refactor)
 - variant dimensions (`ddd|mvc`, `sqlalchemy|tortoise`, `uv|poetry`)
 
 ## Progressive disclosure strategy

@@ -10,6 +10,7 @@ Use this guide to choose architecture and plan refactors between generated stack
 | Team scaling | Clear boundaries help parallel ownership | Fast for small teams and short iteration loops |
 | Abstraction style | Domain contracts and infrastructure adapters | Direct view-to-model orchestration |
 | `add` output shape | Creates domain, operational, presentation, and infra files | Appends to models/repository and adds view file |
+| `adminpanel` output shape | Scaffolds module under `infrastructure/adminpanel` and wires registrar in `server.py` | Scaffolds module under `app/adminpanel` and wires register call in `server.py` |
 | Long-term maintainability | Higher upfront structure, better for large growth | Lower upfront overhead, can become crowded |
 
 ## Directory contracts
@@ -34,10 +35,12 @@ Use this guide to choose architecture and plan refactors between generated stack
 ## DDD
 - Routes are grouped by module and wired through `presentation.register_routes(app)`.
 - Generated `add` flow inserts module import and `module.register(app)` call in `presentation/__init__.py`.
+- Generated `adminpanel` flow wires `adminpanel.register` in application route registrars.
 
 ## MVC
 - Routes are wired through `urls.register_routes(app)`.
 - Generated `add` flow inserts view import and `module.register(app)` call in `urls.py`.
+- Generated `adminpanel` flow inserts `adminpanel.register(app)` in `server.py`.
 
 ## Where business logic belongs
 
@@ -67,3 +70,4 @@ Use this guide to choose architecture and plan refactors between generated stack
 - Auth and middleware registration order is preserved.
 - Transaction boundaries are explicit after extraction.
 - Generated `add` command still targets expected paths in `[tool.robyn-config.add]`.
+- Generated `adminpanel` command still targets design-appropriate module paths and route registration points.
