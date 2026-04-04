@@ -96,7 +96,39 @@ robyn-config adminpanel -u <admin-username> -p <admin-password> <project-path>
 - `pyproject.toml` contains `[tool.robyn-config.adminpanel]` with `created = true`.
 - route wiring includes `adminpanel.register(...)` exactly once.
 
-## 4) Rollback expectations for failed commands
+## 4) Add observability stack
+
+## Basic command
+
+```bash
+robyn-config monitoring <project-path>
+```
+
+## What this command adds
+- Injects a `GET /metrics` endpoint (Prometheus text format) into the app presentation layer.
+- Installs `prometheus-client>=0.20.0` into project dependencies.
+- Generates `docker-compose.monitoring.yml` with Alloy, Loki, Prometheus, and Grafana.
+- Provisions Grafana datasources (fixed UIDs: `loki`, `prometheus`) and two dashboards:
+  - **Logs** (`robyn-app-logs`) — live log stream with search bar and stdout/stderr filter.
+  - **Metrics** (`robyn-app-metrics`) — CPU, memory, open FDs, GC activity, process info.
+
+## Start monitoring alongside the app
+
+```bash
+docker compose up -d
+docker compose -f docker-compose.monitoring.yml up -d
+```
+
+Both commands must run from the same project directory so the monitoring stack joins the same `{dirname}_default` Docker network as the app.
+
+## Post-monitoring checks
+- `GET /metrics` returns Prometheus text output with `200 OK`.
+- Grafana at `http://localhost:3000` loads both dashboards without datasource errors.
+- Logs panel shows data within ~30 s of new app activity.
+- Metrics panel shows data within one scrape interval (~15 s).
+- `pyproject.toml` includes `prometheus-client>=0.20.0` in dependencies.
+
+## 5) Rollback expectations for failed commands
 
 ## `create` rollback behavior
 - If destination directory was created by `create`, failure removes that directory.
@@ -110,10 +142,14 @@ robyn-config adminpanel -u <admin-username> -p <admin-password> <project-path>
 - Command takes a full temp backup before mutation.
 - On failure, project content is restored from backup.
 
+## `monitoring` rollback behavior
+- Command takes a full temp backup before mutation.
+- On failure, project content is restored from backup.
+
 ## Operator recommendation
 Even with built-in rollback, run command in a clean git state so final differences are easy to inspect.
 
-## 5) Migration flow by ORM
+## 6) Migration flow by ORM
 
 ## SQLAlchemy + Alembic
 
@@ -143,7 +179,7 @@ aerich migrate --name describe_change --offline
 aerich upgrade
 ```
 
-## 6) Runbook commands for local and compose
+## 7) Runbook commands for local and compose
 
 ## Local setup and checks
 
@@ -180,10 +216,11 @@ make backend.stop
 4. run app locally
 5. add modules with `add`
 6. scaffold admin UI with `adminpanel` (when needed)
-7. rerun checks and migrations
-8. validate in compose
+7. add observability with `monitoring` (when needed)
+8. rerun checks and migrations
+9. validate in compose
 
-## 7) Sync skills when a new `robyn-config` release is available
+## 8) Sync skills when a new `robyn-config` release is available
 
 ## Command
 

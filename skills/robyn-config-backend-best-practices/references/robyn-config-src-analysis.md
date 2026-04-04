@@ -8,9 +8,12 @@ Primary sources:
 - `src/create/utils.py`
 - `src/add/utils.py`
 - `src/adminpanel/utils/*.py`
+- `src/monitoring/utils/*.py`
 - selected generated templates in `src/create/common`, `src/create/ddd`, `src/create/mvc`
 - admin panel templates in `src/adminpanel/template`
-- integration tests in `tests/integration` (`test_create_command.py`, `test_add_command.py`, `test_adminpanel_command.py`)
+- monitoring templates in `src/monitoring/template` and `src/monitoring/app`
+- integration tests in `tests/integration` (`test_create_command.py`, `test_add_command.py`, `test_adminpanel_command.py`, `test_monitoring_command.py`)
+- unit tests in `tests/unit` (`test_monitoring_dependencies.py`)
 
 ## CLI behavior and failure rollback model
 
@@ -36,6 +39,13 @@ Primary sources:
 - Checks `[tool.robyn-config.adminpanel].created`; if already created, prompts user before updating scaffolding.
 - Creates a full project backup in a temp directory before mutation.
 - Runs `add_adminpanel(...)`.
+- On failure, restores backup into project directory.
+- Always deletes temporary backup directory in `finally` block.
+
+### `monitoring` command
+- Entry point: `src/cli.py:monitoring(...)`.
+- Creates a full project backup in a temp directory before mutation.
+- Runs `add_monitoring(project_path)` from `src/monitoring/utils/__init__.py`.
 - On failure, restores backup into project directory.
 - Always deletes temporary backup directory in `finally` block.
 
@@ -87,6 +97,56 @@ Primary sources:
   - appends table and repository classes into existing model/repository files;
   - creates new view module;
   - updates `urls.py` with import and `register(app)` call.
+
+## `monitoring` command scaffolding model
+
+### Orchestration (`src/monitoring/utils/__init__.py`)
+1. Reads `pyproject.toml` with `read_project_config`.
+2. Extracts `design` and `orm`.
+3. Copies the entire `src/monitoring/template/` tree verbatim into the project root (`_copy_template_tree`).
+4. Injects `metrics.py` into the correct presentation layer and registers the `/metrics` route (`_write_metrics_route`).
+5. Installs `prometheus-client>=0.20.0` — tries live install (`uv add` or `poetry add`) first; falls back to pyproject.toml-only insertion on failure.
+
+### Constants (`src/monitoring/utils/_constants.py`)
+- `TEMPLATE_ROOT` — path to `src/monitoring/template/`.
+- `MONITORING_DEPENDENCIES` — tuple of `(package, version_spec)` pairs currently containing `("prometheus-client", ">=0.20.0")`.
+
+### Dependency handling (`src/monitoring/utils/_dependencies.py`)
+- Fully self-contained; does not import from `adminpanel`.
+- `_detect_package_manager` — reads `package_manager` from config or detects poetry by `[tool.poetry]` presence.
+- `_ensure_poetry_dependency` / `_ensure_project_dependency` — insert dependency into `pyproject.toml` without re-installing.
+- `_install_dependency` — runs `uv add dep>=version` or `poetry add dep>=version --no-interaction`; raises `RuntimeError` on non-zero exit.
+
+### Metrics route injection (`src/monitoring/utils/_app.py`)
+- `METRICS_SOURCE` — path to `src/monitoring/app/metrics.py`.
+- `_write_metrics_route` — copies `metrics.py` to the presentation layer path:
+  - DDD: `src/app/presentation/metrics.py`
+  - MVC: `src/app/views/metrics.py`
+- Calls `_register_routes_ddd` or `_register_routes_mvc` (reused from `add.utils._injection`) to wire `metrics.register(app)` into the route registry.
+
+### Generated template structure
+```
+docker-compose.monitoring.yml
+compose/monitoring/
+  alloy/config.alloy          # Docker log collection + Prometheus scrape (job_name="app")
+  prometheus/prometheus.yml   # Minimal config; metrics arrive via Alloy remote_write
+  grafana/
+    datasources/
+      loki.yaml               # uid: loki, orgId: 1, X-Scope-OrgID header
+      prometheus.yaml         # uid: prometheus, orgId: 1, httpMethod: POST
+    provisioning/
+      dashboards.yaml         # Points to /var/lib/grafana/dashboards
+    dashboards/
+      logs.json               # uid: robyn-app-logs; stream variable "All"=".*/"; search textbox
+      metrics.json            # uid: robyn-app-metrics; CPU, memory, FDs, GC, process info
+```
+
+### Key design constraints
+- Datasource UIDs are fixed (`uid: loki`, `uid: prometheus`) so dashboard panels reference them directly without template variables.
+- `__inputs` and `${DS_LOKI}` / `${DS_PROMETHEUS}` template variables are intentionally absent from dashboard JSON.
+- Alloy `prometheus.scrape` must set `job_name = "app"` — the component name alone would produce a mismatched label.
+- Logs dashboard stream variable "All" option uses `value: ".*"` — empty string `""` would filter out all `stdout`/`stderr` streams.
+- Both composes must run from the same project directory so they share the `{dirname}_default` Docker network and Alloy can reach `app:8000`.
 
 ## `adminpanel` command scaffolding and wiring model
 
@@ -185,6 +245,10 @@ Primary sources:
 - `add` rollback uses full directory backup copy, which can be expensive for large repositories.
 - `adminpanel` also uses full-directory backup/restore; this can be expensive for large repositories.
 - Default superadmin credentials (`admin/admin`) should be overridden in non-development environments.
+- `monitoring` rollback also uses full-directory backup/restore, which can be expensive for large repositories.
+- `prometheus-client` installation falls back to pyproject.toml-only insertion if the package manager binary is unavailable; the app will fail at startup until the dependency is manually installed.
+- Grafana anonymous admin access (`GF_AUTH_ANONYMOUS_ORG_ROLE: Admin`) is enabled by default; disable this before exposing Grafana beyond localhost.
+- Both docker-compose files must be started from the same project directory; a different working directory causes separate Docker networks and breaks Alloy→app connectivity.
 - Behavior differs between templates for user login lookup:
   - DDD repositories use username lookup in shown templates;
   - MVC repository lookup attempts both username and email.
