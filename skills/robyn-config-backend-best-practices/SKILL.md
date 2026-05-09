@@ -161,6 +161,8 @@ docker compose -f docker-compose.monitoring.yml up -d
 ## Reference routing table
 Open only the file needed for the task:
 
+- `references/structural-rules.md`
+  - **MANDATORY** — structural rules for DDD/MVC code, file paths, naming conventions, and anti-patterns. Load BEFORE touching any generated code.
 - `references/robyn-config-src-analysis.md`
   - Use for `robyn-config` internals and generation/injection behavior, including the `monitoring` command.
 - `references/robyn-backend-best-practices.md`
